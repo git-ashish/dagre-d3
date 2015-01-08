@@ -1,0 +1,752 @@
+<!doctype html>
+
+<meta charset="utf-8">
+<title>Dagre D3 Renderer Demo</title>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://cpettitt.github.io/project/dagre-d3/latest/dagre-d3.min.js"></script>
+
+<style>
+
+  body {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+    background: #333;
+  }
+
+
+  @-webkit-keyframes flash {
+    0%, 50%, 100% {
+      opacity: 1;
+    }
+
+    25%, 75% {
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes flash {
+    0%, 50%, 100% {
+      opacity: 1;
+    }
+
+    25%, 75% {
+      opacity: 0.2;
+    }
+  }
+
+  .warn {
+    -webkit-animation-duration: 5s;
+    animation-duration: 5s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+    -webkit-animation-iteration-count: 1;
+    animation-iteration-count: 1;
+  }
+
+  .live.map {
+    width: 100%;
+    height: 100%;
+  }
+
+  svg {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .live.map text {
+    font-weight: 300;
+    font-size: 14px;
+  }
+
+  .live.map .node rect {
+    stroke-width: 1.5px;
+    stroke: #bbb;
+    fill: #666;
+  }
+
+  .live.map .status {
+    height: 100%;
+    width: 15px;
+    display: block;
+    float: left;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    margin-right: 4px;
+  }
+
+  .live.map .running .status {
+    background-color: #7f7;
+  }
+
+  .live.map .running.warn .status {
+    background-color: #ffed68;
+  }
+
+  .live.map .stopped .status {
+    background-color: #f77;
+  }
+
+  .live.map .warn .queue {
+    color: #f77;
+  }
+
+  .warn {
+    -webkit-animation-name: flash;
+    animation-name: flash;
+  }
+
+  .live.map .consumers {
+    margin-right: 2px;
+  }
+
+  .live.map .consumers,
+  .live.map .name {
+    margin-top: 4px;
+  }
+
+  .live.map .consumers:after {
+    content: "x";
+  }
+
+  .live.map .queue {
+    display: block;
+    float: left;
+    width: 130px;
+    height: 20px;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .live.map .node g div {
+    width: 200px;
+    height: 40px;
+    color: #fff;
+  }
+
+  .live.map .node g div span.consumers {
+    display: inline-block;
+    width: 20px;
+  }
+
+  .live.map .edgeLabel text {
+    width: 50px;
+    fill: #fff;
+  }
+
+  .live.map .edgePath path {
+    stroke: #999;
+    stroke-width: 1.5px;
+    fill: #999;
+  }
+</style>
+
+<body>
+<div class="live map">
+  <svg><g/></svg>
+</div>
+
+<script>
+
+  var workers = {
+    "identifier": {
+      "consumers": 2,
+      "count": 20
+    },
+    "lost-and-found": {
+      "consumers": 1,
+      "count": 1,
+      "inputQueue": "identifier",
+      "inputThroughput": 50
+    },
+    "monitor": {
+      "consumers": 1,
+      "count": 0,
+      "inputQueue": "identifier",
+      "inputThroughput": 50
+    },
+    "meta-enricher": {
+      "consumers": 4,
+      "count": 9900,
+      "inputQueue": "identifier",
+      "inputThroughput": 50
+    },
+    "geo-enricher": {
+      "consumers": 2,
+      "count": 1,
+      "inputQueue": "meta-enricher",
+      "inputThroughput": 50
+    },
+    "elasticsearch-writer": {
+      "consumers": 0,
+      "count": 9900,
+      "inputQueue": "geo-enricher",
+      "inputThroughput": 50
+    }
+  };
+
+  var data = {
+    "start": {
+        "name": "start",
+        "type": "start",
+        "arcs": {
+            "abhijeet-hive-customer_orders": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-customer_orders": {
+        "name": "abhijeet-hive-customer_orders",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "end": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "fail": {
+        "name": "fail",
+        "type": "kill",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "end": {
+        "name": "end",
+        "type": "end",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    }
+  };
+
+  data = {
+    "start": {
+        "name": "start",
+        "type": "start",
+        "arcs": {
+            "fork-node": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "fork-node": {
+        "name": "fork-node",
+        "type": "fork",
+        "arcs": {
+            "abhijeet-hive-supplier-region": false,
+            "abhijeet-hive-customer-region": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-customer-region": {
+        "name": "abhijeet-hive-customer-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "merging_completed": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-supplier-region": {
+        "name": "abhijeet-hive-supplier-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "merging_completed": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "merging_completed": {
+        "name": "merging_completed",
+        "type": "join",
+        "arcs": {
+            "abhijeet-hive-customer-supplier-region": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-customer-supplier-region": {
+        "name": "abhijeet-hive-customer-supplier-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "end": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "fail": {
+        "name": "fail",
+        "type": "kill",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "end": {
+        "name": "end",
+        "type": "end",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    }
+};
+
+data = {
+    "start": {
+        "name": "start",
+        "type": "start",
+        "arcs": {
+            "abhijeet-hive-supplier_parts": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-supplier_parts": {
+        "name": "abhijeet-hive-supplier_parts",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "sub-sub-work-flow-example": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "sub-sub-work-flow-example": {
+        "name": "sub-sub-work-flow-example",
+        "type": "sub-workflow",
+        "arcs": {
+            "fail": true,
+            "end": true
+        },
+        "status": null,
+        "subWorkFlowTags": {
+            "start-1": {
+                "name": "start-1",
+                "type": "start",
+                "arcs": {
+                    "abhijeet-hive-customer_orders-1": false
+                },
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "abhijeet-hive-customer_orders-1": {
+                "name": "abhijeet-hive-customer_orders-1",
+                "type": "hive",
+                "arcs": {
+                    "fail-1": true,
+                    "end-1": true
+                },
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "fail-1": {
+                "name": "fail-1",
+                "type": "kill",
+                "arcs": {},
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "end-1": {
+                "name": "end-1",
+                "type": "end",
+                "arcs": {},
+                "status": null,
+                "subWorkFlowTags": null
+            }
+        }
+    },
+    "fail": {
+        "name": "fail",
+        "type": "kill",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "end": {
+        "name": "end",
+        "type": "end",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    }
+};
+
+data = {
+    "start": {
+        "name": "start",
+        "type": "start",
+        "arcs": {
+            "fork-node": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "fork-node": {
+        "name": "fork-node",
+        "type": "fork",
+        "arcs": {
+            "abhijeet-hive-supplier-region": false,
+            "abhijeet-hive-customer-region": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-customer-region": {
+        "name": "abhijeet-hive-customer-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "merging_completed": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-supplier-region": {
+        "name": "abhijeet-hive-supplier-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "merging_completed": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "merging_completed": {
+        "name": "merging_completed",
+        "type": "join",
+        "arcs": {
+            "abhijeet-hive-customer-supplier-region": false
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "abhijeet-hive-customer-supplier-region": {
+        "name": "abhijeet-hive-customer-supplier-region",
+        "type": "hive",
+        "arcs": {
+            "fail": true,
+            "sub-work-flow-example": true
+        },
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "sub-work-flow-example": {
+        "name": "sub-work-flow-example",
+        "type": "sub-workflow",
+        "arcs": {
+            "fail": true,
+            "end": true
+        },
+        "status": null,
+        "subWorkFlowTags": {
+            "start": {
+                "name": "start",
+                "type": "start",
+                "arcs": {
+                    "abhijeet-hive-supplier_parts": false
+                },
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "abhijeet-hive-supplier_parts": {
+                "name": "abhijeet-hive-supplier_parts",
+                "type": "hive",
+                "arcs": {
+                    "fail": true,
+                    "sub-sub-work-flow-example": true
+                },
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "sub-sub-work-flow-example": {
+                "name": "sub-sub-work-flow-example",
+                "type": "sub-workflow",
+                "arcs": {
+                    "fail": true,
+                    "end": true
+                },
+                "status": null,
+                "subWorkFlowTags": {
+                    "start": {
+                        "name": "start",
+                        "type": "start",
+                        "arcs": {
+                            "abhijeet-hive-customer_orders": false
+                        },
+                        "status": null,
+                        "subWorkFlowTags": null
+                    },
+                    "abhijeet-hive-customer_orders": {
+                        "name": "abhijeet-hive-customer_orders",
+                        "type": "hive",
+                        "arcs": {
+                            "fail": true,
+                            "end": true
+                        },
+                        "status": null,
+                        "subWorkFlowTags": null
+                    },
+                    "fail": {
+                        "name": "fail",
+                        "type": "kill",
+                        "arcs": {},
+                        "status": null,
+                        "subWorkFlowTags": null
+                    },
+                    "end": {
+                        "name": "end",
+                        "type": "end",
+                        "arcs": {},
+                        "status": null,
+                        "subWorkFlowTags": null
+                    }
+                }
+            },
+            "fail": {
+                "name": "fail",
+                "type": "kill",
+                "arcs": {},
+                "status": null,
+                "subWorkFlowTags": null
+            },
+            "end": {
+                "name": "end",
+                "type": "end",
+                "arcs": {},
+                "status": null,
+                "subWorkFlowTags": null
+            }
+        }
+    },
+    "fail": {
+        "name": "fail",
+        "type": "kill",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    },
+    "end": {
+        "name": "end",
+        "type": "end",
+        "arcs": {},
+        "status": null,
+        "subWorkFlowTags": null
+    }
+};
+
+  // Set up zoom support
+  var svg = d3.select("svg"),
+      inner = svg.select("g"),
+      zoom = d3.behavior.zoom().on("zoom", function() {
+        inner.attr("transform", "translate(" + d3.event.translate + ")" +
+                                    "scale(" + d3.event.scale + ")");
+      });
+  svg.call(zoom);
+
+  var render = new dagreD3.render();
+
+  // Top-to-Bottom layout - default
+  var g = new dagreD3.graphlib.Graph();
+  g.setGraph({
+    nodesep: 70,
+    ranksep: 50,
+    //rankdir: "LR",
+    marginx: 20,
+    marginy: 20
+  });
+
+  function draw(isUpdate) {
+    for (var id in workers) {
+      var worker = workers[id];
+      var className = worker.consumers ? "running" : "stopped";
+      if (worker.count > 10000) {
+        className += " warn";
+      }
+      var html = "<div>";
+      html += "<span class=status></span>";
+      html += "<span class=consumers>"+worker.consumers+"</span>";
+      html += "<span class=name>"+id+"</span>";
+      html += "<span class=queue><span class=counter>"+worker.count+"</span></span>";
+      html += "</div>";
+      g.setNode(id, {
+        labelType: "html",
+        label: html,
+        rx: 5,
+        ry: 5,
+        padding: 0,
+        class: className
+      });
+
+      if (worker.inputQueue) {
+        g.setEdge(worker.inputQueue, id, {
+          label: worker.inputThroughput + "/s",
+          width: 40
+        });
+      }
+    }
+
+    inner.call(render, g);
+
+  }
+
+
+  var nodeId = 0;
+  function preprocess(json, begining_node){
+    
+    var nodeMap = d3.map(json);
+
+    //=======================================
+    // Parse 1 - Assign IDs to level 1 nodes
+    //=======================================
+
+    
+    var n = nodeMap.keys(),
+        v = nodeMap.values(),
+        node,
+        start_node;
+
+    for (var i = 0; i < v.length; i++) {
+      node = v[i];
+      
+      if (!node._id) {
+        node._id = ++nodeId;
+      }
+
+      // check if the node type is start
+      if (node.type == "start") {
+        start_node = node;
+      }
+
+      /*  
+        Add nodes to the graph. The first argument is the node id. The second is
+        metadata about the node. In this case we're going to add labels to each of
+        our nodes.
+      */
+
+      // Add node to graph
+      g.setNode( node._id, { label: node.name });
+    }
+
+    //=======================================
+    // Parse 2 - Assign IDs to node Arcs
+    //=======================================
+
+    for (var i = 0; i < v.length; i++) {
+
+      node = v[i];
+
+      console.log(i,node);
+
+      // check if the arc property exists
+      var arcs = node.arcs;
+      if (!!arcs && Object.keys(arcs).length) {
+        
+        // Note - currently the arcs is an object and NOT an array
+        var arc_map = d3.map(arcs),
+          arc_nodes = arc_map.keys();
+
+        if( ! !!node._edges ){
+          node._edges = [];
+        }
+
+        for (var j = 0; j < arc_nodes.length; j++) {
+          // get the node representing this arc
+          var _n = nodeMap.get(arc_nodes[j]);
+          // push the edge as the node's id
+          node._edges.push(_n._id);
+
+          /* 
+              Add edges to the graph. The first argument is the edge id. Here we use null
+              to indicate that an arbitrary edge id can be assigned automatically. The
+              second argument is the source of the edge. The third argument is the target
+              of the edge. The last argument is the edge metadata.
+            */
+          
+          g.setEdge(node._id, _n._id, {
+              label: ""
+            });
+        }
+
+      }
+
+    }
+
+    //============================================
+    // Check if the current graph being processed 
+    // is a sub-graph
+    //============================================
+    // check if the begining_node was provided
+    if (!!begining_node) {
+      // create an edge between the begining_node and the 
+      // "start" node of the sub-graph
+      g.setEdge(begining_node._id, start_node._id, {
+            label: ""
+          });
+      begining_node = null;
+    }
+
+    //=======================================
+    // Parse 3 - Check for sub graphs
+    //=======================================
+    
+    for (var i = 0; i < v.length; i++) {
+
+      // parse nodes and add edges to the graph
+      node = v[i];
+
+      // check if subworkflow is present
+      if ( !!node.subWorkFlowTags && Object.keys(node.subWorkFlowTags).length) {
+        preprocess(node.subWorkFlowTags, node);
+      } 
+
+    }
+
+    inner.call(render, g);
+
+  }
+
+
+  preprocess(data);
+
+  function parse_nodes(node,i){
+
+    var remainingNodes=[],
+        nextNodes=[];
+
+    var all = [];
+
+      node.forEach(function(n) {
+        remainingNodes.push(n);
+        all.push(n);
+      });
+
+      while (remainingNodes.length) {
+        nextNodes = [];
+        remainingNodes.forEach(function(node) {
+          node.subWorkFlowTags.forEach(function(n) {
+            nextNodes.push(n);
+            all.push(n);
+          });
+        });
+        remainingNodes = nextNodes;
+    };
+
+    console.log("all", all);
+  }
+
+  //parse_nodes(data);
+
+  //draw();
+</script>
