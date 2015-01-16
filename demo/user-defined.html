@@ -5,13 +5,14 @@
 
 <link rel="stylesheet" href="demo.css">
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<script src="../build/dagre-d3.js"></script>
+<script src="../dist/dagre-d3.js"></script>
 
 <style id="css">
 body {
   font: 300 14px 'Helvetica Neue', Helvetica;
 }
 
+.node line,
 .node rect,
 .node circle,
 .node ellipse,
@@ -40,9 +41,9 @@ body {
 // Create a new directed graph
 var g = new dagreD3.graphlib.Graph().setGraph({});
 
-g.setNode("house", { shape: "house", label: "house" });
+g.setNode("fail", { shape: "fail", label: "house" });
 g.setNode("rect", { shape: "rect" });
-g.setEdge("house", "rect", { arrowhead: "hollowPoint" });
+g.setEdge("fail", "rect", { arrowhead: "hollowPoint" });
 
 var svg = d3.select("svg"),
     inner = svg.select("g");
@@ -64,9 +65,11 @@ render.shapes().house = function(parent, bbox, node) {
       points = [
         { x:   0, y:        0 },
         { x:   w, y:        0 },
-        { x:   w, y:       -h },
-        { x: w/2, y: -h * 3/2 },
-        { x:   0, y:       -h }
+        //{ x:   w, y:       -h },
+        //{ x: w/2, y: -h * 3/2 },
+        //{ x:   0, y:       -h }
+        { x: w/2, y: -h * 1 },
+        { x:   0, y:       0 }
       ];
       shapeSvg = parent.insert("polygon", ":first-child")
         .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
@@ -74,6 +77,242 @@ render.shapes().house = function(parent, bbox, node) {
 
   node.intersect = function(point) {
     return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Fork
+render.shapes().fork = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0, y:  h/2 },
+        { x:   w, y:  h/2 },
+        { x: w/2, y:  -h/2 },
+        { x:   0, y:  h/2 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+
+// Join
+render.shapes().join = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0, y:  -h/2 },
+        { x:   w, y:  -h/2 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  -h/2 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Decision
+render.shapes().decision = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/2, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Switch
+render.shapes().switch = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/2, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  0 },
+        { x:   w, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Case
+render.shapes().case = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/3, y:  -h/2 },
+        { x:   2*w/3, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x:   2*w/3, y:  h/2 },
+        { x:   w/3, y:  h/2 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Sub-Workflow
+render.shapes().subworkflow = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   0,   y:  -h/2 },
+        { x:   w,   y:  -h/2 },
+        { x:   w,   y:  h/2 },
+        { x:   0,   y:  h/2 },
+        { x:   0, y:  h/3 },
+        { x:   w, y:  h/3 },
+        { x:   0, y:  h/3 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Start
+render.shapes().start = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   h/3,       y:  -h/2 },
+        { x:   w-h/3,     y:  -h/2 },
+        { x:   w-h/3,     y:  h/2 },
+        { x:   h/3,       y:  h/2 }
+      ];
+      
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+      shapeSvg = parent.insert("rect", ":first-child")
+        .attr({
+          "x": 0,
+          "y": -h/2,
+          "width": w,
+          "height": h,
+          "rx": h/3,
+          "ry": h/3
+        })
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")")
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// End
+render.shapes().end = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height;
+      shapeSvg = parent.insert("rect", ":first-child")
+        .attr({
+          "x": 0,
+          "y": -h/2,
+          "width": w,
+          "height": h,
+          "rx": h/2.5,
+          "ry": h/2.5
+        })
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 3/4) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.rect(node, point);
+  };
+
+  return shapeSvg;
+};
+
+// Fail
+render.shapes().fail = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      r = w > h ? h/2 : w/2,
+      d = w > h ? h : w,
+      e = Math.sqrt(2)*r;
+
+
+      shapeSvg = parent.insert("line", ":first-child")
+        .attr({
+          "x1": r*.25,
+          "y1": -d/3,
+          "x2": d-r*.25,
+          "y2": d/3
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 3/4) + ")");
+
+      shapeSvg = parent.insert("line", ":first-child")
+        .attr({
+          "x2": d-r*.25,
+          "y2": -d/3,
+          "x1": r*.25,
+          "y1": d/3
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 3/4) + ")");
+
+
+      shapeSvg = parent.insert("circle", ":first-child")
+        .attr({
+          "cx": d/2,
+          "cy": 0,
+          "r": r
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 3/4) + ")")
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.circle(node, r,point);
   };
 
   return shapeSvg;

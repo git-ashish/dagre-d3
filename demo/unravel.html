@@ -720,33 +720,5 @@ data = {
 
   preprocess(data);
 
-  function parse_nodes(node,i){
-
-    var remainingNodes=[],
-        nextNodes=[];
-
-    var all = [];
-
-      node.forEach(function(n) {
-        remainingNodes.push(n);
-        all.push(n);
-      });
-
-      while (remainingNodes.length) {
-        nextNodes = [];
-        remainingNodes.forEach(function(node) {
-          node.subWorkFlowTags.forEach(function(n) {
-            nextNodes.push(n);
-            all.push(n);
-          });
-        });
-        remainingNodes = nextNodes;
-    };
-
-    console.log("all", all);
-  }
-
-  //parse_nodes(data);
-
   //draw();
 </script>
