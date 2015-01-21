@@ -4,7 +4,10 @@
 <title>Dagre D3 Renderer Demo</title>
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<script src="../build/dagre-d3.js"></script>
+<script src="../bower_components/lodash/dist/lodash.js"></script>
+<script src="../bower_components/graphlib/dist/graphlib.core.js"></script>
+<script src="../bower_components/dagre/dist/dagre.core.js"></script>
+<script src="../dist/dagre-d3.core.js"></script>
 
 <style>
 
@@ -269,7 +272,7 @@
     workers["elasticsearch-writer"].count = stoppedWorker1Count + Math.ceil(Math.random() * 100);
     workers["meta-enricher"].count = stoppedWorker2Count + Math.ceil(Math.random() * 100);
     draw(true);
-  }, 1000);
+  }, 100000);
 
   // Do a mock change of worker configuration
   setInterval(function() {

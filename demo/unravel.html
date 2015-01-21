@@ -6,6 +6,12 @@
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="http://cpettitt.github.io/project/dagre-d3/latest/dagre-d3.min.js"></script>
 
+<!-- Pull in JQuery dependencies 
+
+<link rel="stylesheet" href="tipsy.css">
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="tipsy.js"></script>
+-->
 <style>
 
   body {
@@ -17,7 +23,7 @@
     margin: 0;
     padding: 0;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
-    background: #333;
+    background: #fff;
   }
 
 
@@ -60,16 +66,17 @@
     height: 100%;
     overflow: hidden;
   }
-
+  
   .live.map text {
     font-weight: 300;
     font-size: 14px;
+    fill: #333;
   }
 
   .live.map .node rect {
-    stroke-width: 1.5px;
-    stroke: #bbb;
-    fill: #666;
+    stroke-width: 1;
+    stroke: #a4a4a4;
+    fill: #d8d8d8;
   }
 
   .live.map .status {
@@ -113,7 +120,7 @@
   }
 
   .live.map .consumers:after {
-    content: "x";
+    content: "-";
   }
 
   .live.map .queue {
@@ -128,12 +135,11 @@
   .live.map .node g div {
     width: 200px;
     height: 40px;
-    color: #fff;
+    color: #333;
   }
 
   .live.map .node g div span.consumers {
     display: inline-block;
-    width: 20px;
   }
 
   .live.map .edgeLabel text {
@@ -142,10 +148,53 @@
   }
 
   .live.map .edgePath path {
-    stroke: #999;
-    stroke-width: 1.5px;
-    fill: #999;
+    stroke: #a4a4a4;
+    stroke-width: 1;
+    fill: #d8d8d8;
   }
+
+  .node line,
+.node rect,
+.node circle,
+.node ellipse,
+.node polygon {
+  stroke: #a4a4a4;
+  fill: #d8d8d8;
+  stroke-width: 1;
+}
+
+.edgePath path.path {
+  stroke: #a4a4a4;
+  fill: none;
+  stroke-width: 1;
+}
+
+/* This styles the title of the tooltip */
+.tipsy .name {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #60b1fc;
+  margin: 0;
+}
+
+/* This styles the body of the tooltip */
+.tipsy .description {
+  font-size: 1.2em;
+}
+
+
+
+.live.map .node g div i.icon {
+  float: right;
+  clear: both;
+  border: solid 1px #666;
+  padding: 2px;
+  text-transform: uppercase;
+  font-size: 0.75em;
+  border-radius: 5px;
+}
+
+
 </style>
 
 <body>
@@ -557,6 +606,261 @@ data = {
 
   var render = new dagreD3.render();
 
+  // Fork
+render.shapes().fork = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0, y:  h/2 },
+        { x:   w, y:  h/2 },
+        { x: w/2, y:  -h/2 },
+        { x:   0, y:  h/2 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + ", 0)");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+
+// Join
+render.shapes().join = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0, y:  -h/2 },
+        { x:   w, y:  -h/2 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  -h/2 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Decision
+render.shapes().decision = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/2, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Switch
+render.shapes().switch = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/2, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x: w/2, y:  h/2 },
+        { x:   0, y:  0 },
+        { x:   w, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Case
+render.shapes().case = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   w/3, y:  -h/2 },
+        { x:   2*w/3, y:  -h/2 },
+        { x:   w, y:  0 },
+        { x:   2*w/3, y:  h/2 },
+        { x:   w/3, y:  h/2 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Sub-Workflow
+render.shapes().subworkflow = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   0,   y:  0 },
+        { x:   0,   y:  -h/2 },
+        { x:   w,   y:  -h/2 },
+        { x:   w,   y:  h/2 },
+        { x:   0,   y:  h/2 },
+        { x:   0, y:  h/3 },
+        { x:   w, y:  h/3 },
+        { x:   0, y:  h/3 },
+        { x:   0, y:  0 }
+      ];
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// Start
+render.shapes().start = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      points = [
+        { x:   h/3,       y:  -h/2 },
+        { x:   w-h/3,     y:  -h/2 },
+        { x:   w-h/3,     y:  h/2 },
+        { x:   h/3,       y:  h/2 }
+      ];
+      
+      shapeSvg = parent.insert("polygon", ":first-child")
+        .attr("points", points.map(function(d) { return d.x + "," + d.y; }).join(" "))
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+      shapeSvg = parent.insert("rect", ":first-child")
+        .attr({
+          "x": 0,
+          "y": -h/2,
+          "width": w,
+          "height": h,
+          "rx": h/3,
+          "ry": h/3
+        })
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")")
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.polygon(node, points, point);
+  };
+
+  return shapeSvg;
+};
+
+// End
+render.shapes().end = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height;
+      shapeSvg = parent.insert("rect", ":first-child")
+        .attr({
+          "x": 0,
+          "y": -h/2,
+          "width": w,
+          "height": h,
+          "rx": h/2.5,
+          "ry": h/2.5
+        })
+        .attr("transform", "translate(" + (-w/2) + "," + (h * 0) + ")");
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.rect(node, point);
+  };
+
+  return shapeSvg;
+};
+
+// Fail
+render.shapes().fail = function(parent, bbox, node) {
+  var w = bbox.width,
+      h = bbox.height,
+      r = w > h ? h/2 : w/2,
+      d = w > h ? h : w,
+      e = Math.sqrt(2)*r;
+
+
+      shapeSvg = parent.insert("line", ":first-child")
+        .attr({
+          "x1": r*.25,
+          "y1": -d/3,
+          "x2": d-r*.25,
+          "y2": d/3
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 0) + ")");
+
+      shapeSvg = parent.insert("line", ":first-child")
+        .attr({
+          "x2": d-r*.25,
+          "y2": -d/3,
+          "x1": r*.25,
+          "y1": d/3
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 0) + ")");
+
+
+      shapeSvg = parent.insert("circle", ":first-child")
+        .attr({
+          "cx": d/2,
+          "cy": 0,
+          "r": r
+        })
+        .attr("transform", "translate(" + (-d/2) + "," + (h * 0) + ")")
+
+  node.intersect = function(point) {
+    return dagreD3.intersect.circle(node, r,point);
+  };
+
+  return shapeSvg;
+};
+
+
+  // Node Type - symbol map
+  var nodeShapes = {
+    "start": "start",
+    "end": "end",
+    "fail": "fail",
+    "kill": "fail",
+    "fork": "fork",
+    "join": "join",
+    "decision": "decision",
+    //"hive": "case",
+    "switch": "switch",
+    "case": "case",
+    "sub-workflow": "subworkflow"
+  };
+
+  nodeShapes = d3.map(nodeShapes);
+
+
   // Top-to-Bottom layout - default
   var g = new dagreD3.graphlib.Graph();
   g.setGraph({
@@ -567,39 +871,10 @@ data = {
     marginy: 20
   });
 
-  function draw(isUpdate) {
-    for (var id in workers) {
-      var worker = workers[id];
-      var className = worker.consumers ? "running" : "stopped";
-      if (worker.count > 10000) {
-        className += " warn";
-      }
-      var html = "<div>";
-      html += "<span class=status></span>";
-      html += "<span class=consumers>"+worker.consumers+"</span>";
-      html += "<span class=name>"+id+"</span>";
-      html += "<span class=queue><span class=counter>"+worker.count+"</span></span>";
-      html += "</div>";
-      g.setNode(id, {
-        labelType: "html",
-        label: html,
-        rx: 5,
-        ry: 5,
-        padding: 0,
-        class: className
-      });
-
-      if (worker.inputQueue) {
-        g.setEdge(worker.inputQueue, id, {
-          label: worker.inputThroughput + "/s",
-          width: 40
-        });
-      }
-    }
-
-    inner.call(render, g);
-
-  }
+  // Simple function to style the tooltip for the given node.
+  var styleTooltip = function(name, node) {
+    return "<p class='name'>" + node.type + "</p><p class='description'>" + node.label + "</p>";
+  };
 
 
   var nodeId = 0;
@@ -634,9 +909,24 @@ data = {
         metadata about the node. In this case we're going to add labels to each of
         our nodes.
       */
+      var shape = nodeShapes.get(node.type);
+
+      // HTML labels
+      var html = "<div>";
+        html += "<i class=icon>"+node.type+"</i>";
+        //html += "<span class=consumers>"+node.type+"</span>";
+        //html += "<span class=name>"+node.name+"</span>";
+        html += "<span class=queue><span class=counter>"+node._id+"</span></span>";
+        html += "</div>";
 
       // Add node to graph
-      g.setNode( node._id, { label: node.name });
+      g.setNode( node._id, { 
+        //label: node.name,
+        labelType: "html",
+        label: html,
+        type: node.type,
+        shape: !!shape ? shape : "rect"
+      });
     }
 
     //=======================================
@@ -675,7 +965,8 @@ data = {
             */
           
           g.setEdge(node._id, _n._id, {
-              label: ""
+              label: "",
+              lineInterpolate: 'basis' 
             });
         }
 
@@ -719,6 +1010,11 @@ data = {
 
 
   preprocess(data);
+  /*
+  inner.selectAll("g.node")
+    .attr("title", function(v,d) { return styleTooltip(v, g.node(v)) })
+    .each(function(v) { $(this).tipsy({ gravity: "w", opacity: 1, html: true }); });
+*/
 
   //draw();
 </script>
